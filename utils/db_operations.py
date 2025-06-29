@@ -57,8 +57,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-def load_checksheet(check_group_id: int, user_id: str = None):
-    """チェックシートデータを取得する（statusが'open'の項目のみ）"""
+def load_check_items_by_group(check_group_id: int, user_id: str = None):
+    """チェックグループIDを指定して、そのグループのチェック項目（statusが'open'の項目のみ）をカテゴリー別に取得する"""
     try:
         db = next(get_db())
         # カテゴリーごとにデータをグループ化
@@ -88,6 +88,146 @@ def load_checksheet(check_group_id: int, user_id: str = None):
         """
             ),
             {"check_group_id": check_group_id},
+        )
+
+        for row in result:
+            # check_idが一致する場合のみnoteを設定
+            latest_note = ""
+            if note_data and note_data.get("check_id") == row.id:
+                latest_note = note_data.get("note_text", "")
+
+            item = {
+                "check_id": str(row.id),  # idを文字列として扱う
+                "name": row.name,
+                "category": row.category,
+                "description": row.description,
+                "level": row.level,
+                "group": row.group_name,
+                "note": latest_note,
+            }
+            checksheet_by_category[row.category].append(item)
+
+        return checksheet_by_category
+    except Exception as e:
+        raise Exception(f"チェックシートデータの取得中にエラーが発生しました: {e}")
+
+
+def load_checksheet_by_check_ids(check_ids: list, user_id: str = None):
+    """指定されたcheck_idのリストに基づいてチェックシートデータを取得する"""
+    try:
+        db = next(get_db())
+        # カテゴリーごとにデータをグループ化
+        checksheet_by_category = defaultdict(list)
+
+        if not check_ids:
+            return checksheet_by_category
+
+        # 最新の注意事項を取得（user_idが指定されている場合のみ）
+        note_data = None
+        if user_id:
+            # check_idsから最初のIDを使用してcheck_group_idを取得
+            first_check_id = check_ids[0]
+            check_group_id = get_check_group_id_by_check_id(first_check_id)
+            note_data = get_latest_check_item_note(user_id, check_group_id)
+
+        # チェック項目を取得
+        placeholders = ','.join([':check_id_' + str(i) for i in range(len(check_ids))])
+        params = {f'check_id_{i}': check_id for i, check_id in enumerate(check_ids)}
+        
+        result = db.execute(
+            text(
+                f"""
+            SELECT 
+                ci.id,
+                ci.name,
+                c.name as category,
+                ci.description,
+                ci.level,
+                cg.name as group_name
+            FROM check_items ci
+            JOIN categories c ON ci.category_id = c.id
+            JOIN check_groups cg ON ci.group_id = cg.id
+            WHERE ci.id IN ({placeholders})
+            ORDER BY c.name, ci.id
+        """
+            ),
+            params,
+        )
+
+        for row in result:
+            # check_idが一致する場合のみnoteを設定
+            latest_note = ""
+            if note_data and note_data.get("check_id") == row.id:
+                latest_note = note_data.get("note_text", "")
+
+            item = {
+                "check_id": str(row.id),  # idを文字列として扱う
+                "name": row.name,
+                "category": row.category,
+                "description": row.description,
+                "level": row.level,
+                "group": row.group_name,
+                "note": latest_note,
+            }
+            checksheet_by_category[row.category].append(item)
+
+        return checksheet_by_category
+    except Exception as e:
+        raise Exception(f"チェックシートデータの取得中にエラーが発生しました: {e}")
+
+
+def load_checksheet_by_check_sheet_id(check_sheet_id: str, user_id: str = None):
+    """check_sheet_idを指定して、チェック結果に含まれるcheck_idのみのチェックシートデータを取得する"""
+    try:
+        db = next(get_db())
+        # カテゴリーごとにデータをグループ化
+        checksheet_by_category = defaultdict(list)
+
+        # チェック結果からcheck_idのリストを取得
+        check_results = (
+            db.query(CheckResult)
+            .filter(
+                CheckResult.check_sheet_id == check_sheet_id,
+                CheckResult.check_type == "check",
+            )
+            .all()
+        )
+
+        if not check_results:
+            return checksheet_by_category
+
+        check_ids = [str(result.check_id) for result in check_results]
+
+        # 最新の注意事項を取得（user_idが指定されている場合のみ）
+        note_data = None
+        if user_id:
+            # check_idsから最初のIDを使用してcheck_group_idを取得
+            first_check_id = check_ids[0]
+            check_group_id = get_check_group_id_by_check_id(first_check_id)
+            note_data = get_latest_check_item_note(user_id, check_group_id)
+
+        # チェック項目を取得
+        placeholders = ','.join([':check_id_' + str(i) for i in range(len(check_ids))])
+        params = {f'check_id_{i}': check_id for i, check_id in enumerate(check_ids)}
+        
+        result = db.execute(
+            text(
+                f"""
+            SELECT 
+                ci.id,
+                ci.name,
+                c.name as category,
+                ci.description,
+                ci.level,
+                cg.name as group_name
+            FROM check_items ci
+            JOIN categories c ON ci.category_id = c.id
+            JOIN check_groups cg ON ci.group_id = cg.id
+            WHERE ci.id IN ({placeholders})
+            ORDER BY c.name, ci.id
+        """
+            ),
+            params,
         )
 
         for row in result:
@@ -431,8 +571,8 @@ def save_review_with_status(
         raise Exception(f"レビュー結果の保存中にエラーが発生しました: {e}")
 
 
-def load_check_sheet(check_sheet_id):
-    """チェックシート情報を取得する"""
+def load_check_sheet_metadata(check_sheet_id):
+    """チェックシートIDを指定して、チェックシートの基本情報（メタデータ）を取得する"""
     try:
         db = next(get_db())
         check_sheet = (
@@ -1198,3 +1338,51 @@ def get_user_tasks(user_id: str) -> list:
         return results_list
     except Exception as e:
         raise Exception(f"ユーザータスクの取得中にエラーが発生しました: {e}")
+
+
+def get_user_check_item_notes(user_id: str, check_group_id: int) -> list:
+    """
+    指定されたユーザーとチェックグループの注意事項を取得する
+
+    Args:
+        user_id (str): ユーザーID
+        check_group_id (int): チェックグループID
+
+    Returns:
+        list: 注意事項のリスト
+            [
+                {
+                    "check_id": int,
+                    "note_text": str,
+                    "created_at": datetime
+                }
+            ]
+    """
+    try:
+        db = next(get_db())
+
+        # ユーザーの注意事項を取得（check_group_idでフィルタリング）
+        result = db.execute(
+            text(
+                """
+            SELECT cin.check_id, cin.note_text, cin.created_at
+            FROM check_item_notes cin
+            JOIN check_items ci ON cin.check_id = ci.id
+            WHERE cin.user_id = :user_id
+            AND ci.group_id = :check_group_id
+            ORDER BY cin.created_at DESC
+        """
+            ),
+            {"user_id": user_id, "check_group_id": check_group_id},
+        ).fetchall()
+
+        return [
+            {
+                "check_id": row.check_id,
+                "note_text": row.note_text,
+                "created_at": row.created_at
+            }
+            for row in result
+        ]
+    except Exception as e:
+        raise Exception(f"注意事項の取得中にエラーが発生しました: {e}")

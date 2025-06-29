@@ -255,7 +255,7 @@ def auto_fill_check_sheet(check_group_id: int, comment: str) -> Dict[str, Any]:
         Dict[str, Any]: チェック結果を含む辞書
     """
     # チェックリストの取得（指定されたグループの項目を取得）
-    checksheet_data = db_operations.load_checksheet(check_group_id=check_group_id)
+    checksheet_data = db_operations.load_check_items_by_group(check_group_id=check_group_id)
 
     # チェック項目の情報を収集
     check_items = []
@@ -279,6 +279,8 @@ def auto_fill_check_sheet(check_group_id: int, comment: str) -> Dict[str, Any]:
 
     # プロンプトの作成
     prompt = f"""
+    あなたはチェックシート入力プロキシAIエージェントです。
+    人間に変わって、チェックシートを入力します。
     以下は人間がチェックシートをチェックする際の音声認識の結果です。
     この音声認識の結果に基づいてチェックリストを埋めてください。
     あなたは話者になりきって、チェックリストを埋めてください。

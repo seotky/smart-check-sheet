@@ -52,6 +52,8 @@ def suggest_check_items(
 
     # プロンプトの作成
     prompt = f"""
+    あなたはチェックシート生成AIエージェントです。
+    既存のチェックシートに対して、新しくチェック項目を追加し、チェックシートを改善、業務の効率を向上することを目的としています。
     以下のレビュー結果を分析し、新しく追加すべきチェック項目があれば提案してください。
     提案は、レビュー結果から見つかった改善点や、より良い設計のために必要な項目を基にしてください。
     新しく追加すべきチェック項目がない場合や、判断が難しい場合は空のリストを返却してください。
@@ -77,6 +79,7 @@ def suggest_check_items(
 
     # レスポンスの解析
     try:
+        print(response.parsed)
         return response.parsed
     except Exception as e:
         raise Exception(

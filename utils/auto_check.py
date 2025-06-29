@@ -160,7 +160,7 @@ def auto_check_document(check_group_id: int, document: str) -> Dict[str, Any]:
     """
 
     # チェックリストの取得（指定されたグループの項目を取得）
-    checksheet_data = db_operations.load_checksheet(check_group_id=check_group_id)
+    checksheet_data = db_operations.load_check_items_by_group(check_group_id=check_group_id)
 
     # チェック項目の情報を収集
     check_items = []
@@ -184,6 +184,8 @@ def auto_check_document(check_group_id: int, document: str) -> Dict[str, Any]:
 
     # プロンプトの作成
     prompt = f"""
+    あなたはチェックリストのレビューAIエージェントです。
+    人間に変わって、ドキュメントをレビューし、チェックリストに基づいて評価を実施、業務を効率化します。
     以下のドキュメントを、チェックリストに基づいて評価してください。
     各チェック項目について、該当するかどうか（checked）を判定してください。
     そもそも対象のドキュメントについて、チェック項目の対象とならないようなケースの場合は、checkedはtrueとなります。

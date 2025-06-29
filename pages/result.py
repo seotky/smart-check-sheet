@@ -19,7 +19,7 @@ def main():
             st.warning("結果IDが指定されていません。")
             return
 
-        check_sheet = db_operations.load_check_sheet(timestamp)
+        check_sheet = db_operations.load_check_sheet_metadata(timestamp)
         check_results = db_operations.load_check_results(timestamp)
         if not check_sheet or not check_results:
             st.error("指定された結果が見つかりませんでした。")
@@ -36,8 +36,8 @@ def main():
             # auto_checkの場合はログインユーザーのIDを使用
             if assignee_id == "auto_check":
                 assignee_id = user_id
-            checksheet_data = db_operations.load_checksheet(
-                check_group_id=check_group_id, user_id=assignee_id
+            checksheet_data = db_operations.load_checksheet_by_check_sheet_id(
+                check_sheet_id=timestamp, user_id=assignee_id
             )
         else:
             st.error("チェックグループIDが見つかりませんでした。")

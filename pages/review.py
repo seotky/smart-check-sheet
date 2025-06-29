@@ -1,5 +1,6 @@
 import pydub
 import streamlit as st
+import traceback
 
 import utils.db_operations as db_operations
 import utils.voice_utils as voice_utils
@@ -24,7 +25,7 @@ def main():
             return
 
         # チェックシート情報を読み込む
-        check_sheet = db_operations.load_check_sheet(timestamp)
+        check_sheet = db_operations.load_check_sheet_metadata(timestamp)
         if not check_sheet:
             st.error("指定されたチェックシートが見つかりませんでした。")
             return
@@ -48,8 +49,8 @@ def main():
             # auto_checkの場合はログインユーザーのIDを使用
             if assignee_id == "auto_check":
                 assignee_id = user_id
-            checksheet_data = db_operations.load_checksheet(
-                check_group_id=check_group_id, user_id=assignee_id
+            checksheet_data = db_operations.load_checksheet_by_check_sheet_id(
+                check_sheet_id=timestamp, user_id=assignee_id
             )
         else:
             st.error("チェックグループIDが見つかりませんでした。")
@@ -139,11 +140,14 @@ def main():
                         # レビューチェックボックス
                         review_key = f"review_{check_id}"
                         # 既存のレビュー結果があれば初期値として設定
-                        initial_review_checked = (
-                            existing_review.get(check_id)["checked"]
-                            if existing_review
-                            else False
-                        )
+                        if existing_review:
+                            initial_review_checked = (
+                                existing_review.get(check_id)["checked"]
+                                if existing_review.get(check_id)
+                                else False
+                            )
+                        else:
+                            initial_review_checked = False
                         review_checked = st.checkbox(
                             "レビューOK",
                             key=review_key,
@@ -170,12 +174,15 @@ def main():
 
                         # レビューコメント入力
                         review_comment_key = f"review_comment_{check_id}"
-                        # 既存のレビューコメントがあれば初期値として設定
-                        initial_review_comment = (
-                            existing_review.get(check_id)["remarks"]
-                            if existing_review
-                            else ""
-                        )
+                        if existing_review:
+                            # 既存のレビューコメントがあれば初期値として設定
+                            initial_review_comment = (
+                                existing_review.get(check_id)["remarks"]
+                                if existing_review.get(check_id)
+                                else ""
+                            )
+                        else:
+                            initial_review_comment = ""
                         review_comment = st.text_area(
                             "レビューコメント",
                             key=review_comment_key,
@@ -261,6 +268,7 @@ def main():
                 st.switch_page("pages/result.py")
     except Exception as e:
         st.error(f"エラーが発生しました: {e}")
+        st.error(f"スタックトレース:\n{traceback.format_exc()}")
 
 
 if __name__ == "__main__":

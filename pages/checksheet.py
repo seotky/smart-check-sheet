@@ -28,7 +28,7 @@ def main():
             timestamp = st.session_state["timestamp"]
 
         if timestamp:
-            check_sheet = db_operations.load_check_sheet(timestamp)
+            check_sheet = db_operations.load_check_sheet_metadata(timestamp)
             check_results = db_operations.load_check_results(timestamp)
             review_results = db_operations.load_check_results(
                 timestamp, check_type="review"
@@ -96,7 +96,28 @@ def main():
                 for result in gemini_response
                 if isinstance(result, voice_utils.OverallResult)
             ]
-            st.session_state["results"] = voice_check_results.copy()
+            # 既存の結果と新しい結果をマージ
+            existing_results = st.session_state.get("results", {})
+            
+            # st.session_state["results"]がない場合、review_resultsをベースとして使用
+            if not existing_results and review_results:
+                existing_results = review_results.copy()
+            
+            merged_results = existing_results.copy()
+            
+            for check_id, new_result in voice_check_results.items():
+                if check_id in merged_results:
+                    # 既存の値がある場合：checkedはOR演算、remarksは結合
+                    existing_result = merged_results[check_id]
+                    merged_results[check_id] = {
+                        "checked": existing_result.get("checked", False) or new_result.get("checked", False),
+                        "remarks": (existing_result.get("remarks", "") + "\n" + new_result.get("remarks", "")).strip()
+                    }
+                else:
+                    # 新しい値の場合：そのまま設定
+                    merged_results[check_id] = new_result
+            
+            st.session_state["results"] = merged_results
             voice_overall_remarks = (
                 voice_overall_remarks[0] if len(voice_overall_remarks) > 0 else ""
             )
@@ -119,9 +140,14 @@ def main():
 
     # チェックシートデータの読み込み
     if check_group_id:
-        checksheet_data = db_operations.load_checksheet(
-            check_group_id=check_group_id, user_id=user_id
-        )
+        if check_results:
+            # 既存のチェックシートを編集する場合：チェック結果に含まれるcheck_idのみを対象
+            checksheet_data = db_operations.load_checksheet_by_check_sheet_id(
+                check_sheet_id=timestamp, user_id=user_id
+            )
+        else:
+            # 新規作成の場合：チェックグループ全体のデータを取得
+            checksheet_data = db_operations.load_check_items_by_group(check_group_id=check_group_id, user_id=user_id)
     else:
         st.error("チェックグループが選択されていません。")
         st.stop()

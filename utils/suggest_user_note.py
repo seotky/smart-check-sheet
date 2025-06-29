@@ -11,12 +11,13 @@ class SuggestedNote(BaseModel):
     note_text: str
 
 
-def suggest_check_note(review_results: Dict) -> List[SuggestedNote]:
+def suggest_check_note(review_results: Dict, user_id: str) -> List[SuggestedNote]:
     """
     レビュー結果を分析し、新しいチェック項目を提案する
 
     Args:
         review_results (Dict): レビュー結果の辞書
+        user_id (str): ユーザーID
 
     Returns:
         List[SuggestedNote]: 提案されたチェック項目のリスト
@@ -28,6 +29,22 @@ def suggest_check_note(review_results: Dict) -> List[SuggestedNote]:
         location="us-central1"
     )
 
+    # レビュー結果からcheck_group_idを取得
+    check_group_id = None
+    if review_results:
+        first_check_id = list(review_results.keys())[0]
+        check_group_id = db_operations.get_check_group_id_by_check_id(str(first_check_id))
+
+    if not check_group_id:
+        raise Exception("チェックグループIDを取得できませんでした")
+
+    # ユーザーの既存の注意事項を取得
+    existing_notes = []
+    try:
+        existing_notes = db_operations.get_user_check_item_notes(user_id, check_group_id)
+    except Exception as e:
+        print(f"既存の注意事項の取得中にエラーが発生しました: {e}")
+
     # レビュー結果をテキストに変換
     review_text = ""
     for check_id, result in review_results.items():
@@ -37,15 +54,30 @@ def suggest_check_note(review_results: Dict) -> List[SuggestedNote]:
         if result.get("remarks"):
             review_text += f"  コメント: {result['remarks']}\n"
 
-    print("fizz")
+    # 既存の注意事項をテキストに変換
+    existing_notes_text = ""
+    if existing_notes:
+        for note in existing_notes:
+            # 日付をフォーマット
+            created_date = note['created_at'].strftime("%Y-%m-%d %H:%M:%S")
+            existing_notes_text += f"- Check ID: {note['check_id']} ({created_date}): {note['note_text']}\n"
+
     # プロンプトの作成
     prompt = f"""
-    以下のレビュー結果を分析し、次回以降に注意すべきチェック項目を選定し、次回以降の注意コメントを生成してください。
+    あなたはチェックリストのレビュー結果から、レビューイの注意事項を提案するAIです。
+    レビューイがチェックリストをもとにチェックをする際に、注意すべき事項を提案し、チェックの効率や品質を向上させることを目的としています。
+    以下のレビュー結果と過去の注意事項を分析し、次回以降に注意すべきチェック項目を選定し、次回以降の注意コメントを生成してください。
     注意すべきチェック項目がない場合や、判断が難しい場合は空のリストを返却してください。
+    今回のレビュー結果と過去の注意事項を参考に、新しい注意事項を作成してください。
+    もしくは、必要に応じて既存の注意事項のアップデートを提案してください。既存の注意事項と同じ内容でも問題ありませんが、その場合でも作成は行なってください。
     注意すべきチェック項目は基本的には0件、または1件、多くても2件程度です。
     
     # レビュー結果:
     {review_text}
+
+    # 過去の注意事項:
+    {existing_notes_text}
+    
     """
     try:
         # Gemini APIの呼び出し
@@ -65,7 +97,6 @@ def suggest_check_note(review_results: Dict) -> List[SuggestedNote]:
 
     # レスポンスの解析
     try:
-        print(response.parsed)
         return response.parsed
     except Exception as e:
         raise Exception(
