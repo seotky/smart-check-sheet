@@ -140,14 +140,11 @@ def main():
                         # レビューチェックボックス
                         review_key = f"review_{check_id}"
                         # 既存のレビュー結果があれば初期値として設定
-                        if existing_review:
-                            initial_review_checked = (
-                                existing_review.get(check_id)["checked"]
-                                if existing_review.get(check_id)
-                                else False
-                            )
-                        else:
-                            initial_review_checked = False
+                        initial_review_checked = (
+                            existing_review.get(check_id)["checked"]
+                            if existing_review
+                            else False
+                        )
                         review_checked = st.checkbox(
                             "レビューOK",
                             key=review_key,
@@ -174,15 +171,12 @@ def main():
 
                         # レビューコメント入力
                         review_comment_key = f"review_comment_{check_id}"
-                        if existing_review:
-                            # 既存のレビューコメントがあれば初期値として設定
-                            initial_review_comment = (
-                                existing_review.get(check_id)["remarks"]
-                                if existing_review.get(check_id)
-                                else ""
-                            )
-                        else:
-                            initial_review_comment = ""
+                        # 既存のレビューコメントがあれば初期値として設定
+                        initial_review_comment = (
+                            existing_review.get(check_id)["remarks"]
+                            if existing_review
+                            else ""
+                        )
                         review_comment = st.text_area(
                             "レビューコメント",
                             key=review_comment_key,

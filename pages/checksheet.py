@@ -96,28 +96,7 @@ def main():
                 for result in gemini_response
                 if isinstance(result, voice_utils.OverallResult)
             ]
-            # 既存の結果と新しい結果をマージ
-            existing_results = st.session_state.get("results", {})
-            
-            # st.session_state["results"]がない場合、review_resultsをベースとして使用
-            if not existing_results and review_results:
-                existing_results = review_results.copy()
-            
-            merged_results = existing_results.copy()
-            
-            for check_id, new_result in voice_check_results.items():
-                if check_id in merged_results:
-                    # 既存の値がある場合：checkedはOR演算、remarksは結合
-                    existing_result = merged_results[check_id]
-                    merged_results[check_id] = {
-                        "checked": existing_result.get("checked", False) or new_result.get("checked", False),
-                        "remarks": (existing_result.get("remarks", "") + "\n" + new_result.get("remarks", "")).strip()
-                    }
-                else:
-                    # 新しい値の場合：そのまま設定
-                    merged_results[check_id] = new_result
-            
-            st.session_state["results"] = merged_results
+            st.session_state["results"] = voice_check_results.copy()
             voice_overall_remarks = (
                 voice_overall_remarks[0] if len(voice_overall_remarks) > 0 else ""
             )
