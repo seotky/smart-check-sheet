@@ -1,0 +1,84 @@
+{
+  "checklist": [
+    {
+      "check_id": "STR001",
+      "name": "文章の目的の明確性",
+      "category": "文章構成",
+      "description": "文章の目的や意図が明確に伝わる構成になっているか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "STR002",
+      "name": "論理的な構成",
+      "category": "文章構成",
+      "description": "文章の流れが論理的で、読者が理解しやすい構成になっているか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "EXP001",
+      "name": "具体例の適切性",
+      "category": "説明",
+      "description": "抽象的な概念を理解しやすくする具体例が適切に示されているか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "EXP002",
+      "name": "専門用語の説明",
+      "category": "説明",
+      "description": "専門用語が適切に説明され、読者が理解できるようになっているか",
+      "level": 2,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "LANG001",
+      "name": "文章の簡潔さ",
+      "category": "文章表現",
+      "description": "文章が簡潔で、無駄な表現がないか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "LANG002",
+      "name": "適切な文体",
+      "category": "文章表現",
+      "description": "目的に応じた適切な文体が使用されているか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "FORM001",
+      "name": "段落の適切性",
+      "category": "文章形式",
+      "description": "段落の区切りが適切で、読みやすい文章になっているか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "FORM002",
+      "name": "文章の長さ",
+      "category": "文章形式",
+      "description": "文章の長さが適切で、読者の負担になっていないか",
+      "level": 2,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "REV001",
+      "name": "誤字脱字の確認",
+      "category": "校正",
+      "description": "誤字脱字がないか確認されているか",
+      "level": 3,
+      "group": "文章チェック"
+    },
+    {
+      "check_id": "REV002",
+      "name": "文章の一貫性",
+      "category": "校正",
+      "description": "文章全体で表現や用語の使用が一貫しているか",
+      "level": 2,
+      "group": "文章チェック"
+    }
+  ]
+} 
